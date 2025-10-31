@@ -14,7 +14,7 @@ pyobjc-framework-Vision==10.3.1
 
 # AI/LLM Integration
 ollama==0.4.4
-google-genai==1.9.0
+google-genai==1.47.0
 openai==1.57.2
 anthropic==0.42.0
 
