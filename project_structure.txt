@@ -1,0 +1,45 @@
+.
+├── CHANGELOG.md
+├── LICENSE
+├── Makefile
+├── PROJECT_PLAN.md
+├── QUICKSTART.md
+├── README.md
+├── SESSION_REPORT.md
+├── SESSION_REPORT_2.md
+├── TESTING_GUIDE.md
+├── docs
+├── project_structure.txt
+├── pytest.ini
+├── requirements.txt
+├── run_api.py
+├── sentry_ai
+│   ├── __init__.py
+│   ├── agents
+│   │   ├── __init__.py
+│   │   ├── actor.py
+│   │   ├── analyzer.py
+│   │   ├── decision_engine.py
+│   │   └── observer.py
+│   ├── api
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   └── database.py
+│   ├── main.py
+│   ├── models
+│   │   ├── __init__.py
+│   │   └── data_models.py
+│   └── utils
+│       ├── __init__.py
+│       ├── ocr_helper.py
+│       └── screenshot_helper.py
+├── test_installation.py
+└── tests
+    ├── __init__.py
+    ├── test_agents.py
+    └── test_integration.py
+
+8 directories, 34 files

@@ -82,14 +82,32 @@ Pour plus de détails, consultez [PROJECT_PLAN.md](PROJECT_PLAN.md).
 
 ## 🚀 Installation
 
-### Prérequis
+### Installation Automatique (Recommandée)
 
-*   **macOS 13.0+** (Ventura ou supérieur)
-*   **Python 3.11+**
-*   **Ollama** installé ([ollama.ai](https://ollama.ai))
-*   **Permissions d'accessibilité** (l'application vous guidera)
+Utilisez le script d'installation automatique :
 
-### Étapes d'Installation
+```bash
+git clone https://github.com/lekesiz/Sentry-AI.git
+cd Sentry-AI
+./setup.sh
+```
+
+Le script va :
+- ✓ Créer un environnement virtuel Python
+- ✓ Installer toutes les dépendances
+- ✓ Vérifier l'installation d'Ollama
+- ✓ Configurer le fichier `.env`
+- ✓ Tester l'installation
+
+Ensuite, suivez les instructions affichées pour :
+1. Démarrer Ollama (`ollama serve`)
+2. Télécharger le modèle (`ollama pull phi3:mini`)
+3. Accorder les permissions d'accessibilité
+4. Lancer Sentry-AI (`make run`)
+
+### Installation Manuelle
+
+Si vous préférez installer manuellement :
 
 ```bash
 # 1. Cloner le dépôt
@@ -104,15 +122,26 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # 4. Installer Ollama et télécharger un modèle
-# Si Ollama n'est pas installé : brew install ollama
+brew install ollama
+ollama serve  # Dans un terminal séparé
 ollama pull phi3:mini
 
-# 5. Configurer les permissions d'accessibilité
-# Suivez les instructions à l'écran lors du premier lancement
+# 5. Copier le fichier de configuration
+cp .env.example .env
 
-# 6. Lancer Sentry-AI
-python -m sentry_ai.main
+# 6. Tester l'installation
+python test_installation.py
+
+# 7. Lancer Sentry-AI
+make run
 ```
+
+### Prérequis
+
+*   **macOS 13.0+** (Ventura ou supérieur)
+*   **Python 3.11+**
+*   **Ollama** installé ([ollama.ai](https://ollama.ai))
+*   **Permissions d'accessibilité** (l'application vous guidera)
 
 ---
 
