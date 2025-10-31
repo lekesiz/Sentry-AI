@@ -16,6 +16,8 @@ from enum import Enum
 import os
 from loguru import logger
 
+from .llm_parser import parse_structured_response
+
 
 class LLMProvider(str, Enum):
     """Supported LLM providers."""
@@ -137,26 +139,7 @@ class OllamaProvider(BaseLLMProvider):
         full_prompt += "\nRespond with ONLY the number of your choice and a brief reason."
         
         response = self.generate(full_prompt, system_prompt)
-        
-        # Parse response
-        try:
-            lines = response.strip().split('\n')
-            choice_num = int(lines[0].strip().split()[0])
-            choice = options[choice_num - 1] if 1 <= choice_num <= len(options) else options[0]
-            reasoning = ' '.join(lines[1:]) if len(lines) > 1 else "No reasoning provided"
-            
-            return {
-                "choice": choice,
-                "reasoning": reasoning,
-                "confidence": 0.8
-            }
-        except Exception as e:
-            logger.warning(f"Failed to parse Ollama response: {e}")
-            return {
-                "choice": options[0],
-                "reasoning": "Fallback to first option due to parsing error",
-                "confidence": 0.5
-            }
+        return parse_structured_response(response, options, confidence=0.8)
 
 
 class GeminiProvider(BaseLLMProvider):
@@ -217,26 +200,7 @@ class GeminiProvider(BaseLLMProvider):
         full_prompt += "\nRespond with ONLY the number of your choice and a brief reason."
         
         response = self.generate(full_prompt, system_prompt)
-        
-        # Parse response
-        try:
-            lines = response.strip().split('\n')
-            choice_num = int(lines[0].strip().split()[0])
-            choice = options[choice_num - 1] if 1 <= choice_num <= len(options) else options[0]
-            reasoning = ' '.join(lines[1:]) if len(lines) > 1 else "No reasoning provided"
-            
-            return {
-                "choice": choice,
-                "reasoning": reasoning,
-                "confidence": 0.9
-            }
-        except Exception as e:
-            logger.warning(f"Failed to parse Gemini response: {e}")
-            return {
-                "choice": options[0],
-                "reasoning": "Fallback to first option due to parsing error",
-                "confidence": 0.5
-            }
+        return parse_structured_response(response, options, confidence=0.9)
 
 
 class OpenAIProvider(BaseLLMProvider):
@@ -298,26 +262,7 @@ class OpenAIProvider(BaseLLMProvider):
         full_prompt += "\nRespond with ONLY the number of your choice and a brief reason."
         
         response = self.generate(full_prompt, system_prompt)
-        
-        # Parse response
-        try:
-            lines = response.strip().split('\n')
-            choice_num = int(lines[0].strip().split()[0])
-            choice = options[choice_num - 1] if 1 <= choice_num <= len(options) else options[0]
-            reasoning = ' '.join(lines[1:]) if len(lines) > 1 else "No reasoning provided"
-            
-            return {
-                "choice": choice,
-                "reasoning": reasoning,
-                "confidence": 0.95
-            }
-        except Exception as e:
-            logger.warning(f"Failed to parse OpenAI response: {e}")
-            return {
-                "choice": options[0],
-                "reasoning": "Fallback to first option due to parsing error",
-                "confidence": 0.5
-            }
+        return parse_structured_response(response, options, confidence=0.95)
 
 
 class ClaudeProvider(BaseLLMProvider):
@@ -374,26 +319,7 @@ class ClaudeProvider(BaseLLMProvider):
         full_prompt += "\nRespond with ONLY the number of your choice and a brief reason."
         
         response = self.generate(full_prompt, system_prompt)
-        
-        # Parse response
-        try:
-            lines = response.strip().split('\n')
-            choice_num = int(lines[0].strip().split()[0])
-            choice = options[choice_num - 1] if 1 <= choice_num <= len(options) else options[0]
-            reasoning = ' '.join(lines[1:]) if len(lines) > 1 else "No reasoning provided"
-            
-            return {
-                "choice": choice,
-                "reasoning": reasoning,
-                "confidence": 0.95
-            }
-        except Exception as e:
-            logger.warning(f"Failed to parse Claude response: {e}")
-            return {
-                "choice": options[0],
-                "reasoning": "Fallback to first option due to parsing error",
-                "confidence": 0.5
-            }
+        return parse_structured_response(response, options, confidence=0.95)
 
 
 class LLMProviderFactory:
