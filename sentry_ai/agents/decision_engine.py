@@ -11,6 +11,7 @@ from loguru import logger
 from ..models.data_models import DialogContext, AIDecision
 from ..core.config import settings, requires_confirmation
 from ..core.llm_provider import LLMProviderFactory, LLMProvider, BaseLLMProvider
+from ..core.llm_fallback import fallback_manager
 from .vscode_strategies import VSCodeStrategyManager
 
 
@@ -24,41 +25,17 @@ class DecisionEngine:
     
     def __init__(self):
         """Initialize the Decision Engine."""
-        self.llm_provider: Optional[BaseLLMProvider] = None
-        self._initialize_llm()
+        self.fallback_manager = fallback_manager
         
-        # Initialize VS Code strategy manager
-        self.vscode_strategies = VSCodeStrategyManager(llm_provider=self.llm_provider)
-    
-    def _initialize_llm(self):
-        """Initialize the configured LLM provider."""
-        try:
-            provider_name = settings.llm_provider.lower()
-            provider_enum = LLMProvider(provider_name)
-            
-            # Get model from settings or use provider default
-            model = settings.llm_model
-            if not model and provider_name == "ollama":
-                model = settings.ollama_model
-            
-            self.llm_provider = LLMProviderFactory.create(
-                provider=provider_enum,
-                model=model,
-                temperature=settings.llm_temperature
-            )
-            
-            if self.llm_provider.is_available():
-                logger.info(f"LLM Provider initialized: {provider_name} with model {self.llm_provider.model}")
-            else:
-                logger.warning(f"LLM Provider {provider_name} not available. Using rule-based fallback.")
-                self.llm_provider = None
+        # Initialize VS Code strategy manager with fallback
+        # For VS Code strategies, we'll use the first available provider
+        first_provider = None
+        if fallback_manager.is_any_available():
+            available = fallback_manager.get_available_providers()
+            if available:
+                first_provider = fallback_manager.providers.get(available[0])
         
-        except ValueError as e:
-            logger.error(f"Invalid LLM provider: {settings.llm_provider}. Using rule-based fallback.")
-            self.llm_provider = None
-        except Exception as e:
-            logger.error(f"Failed to initialize LLM provider: {e}. Using rule-based fallback.")
-            self.llm_provider = None
+        self.vscode_strategies = VSCodeStrategyManager(llm_provider=first_provider)
     
     def decide(self, context: DialogContext) -> Optional[AIDecision]:
         """
@@ -80,15 +57,15 @@ class DecisionEngine:
         # Check if this app requires confirmation
         needs_confirmation = requires_confirmation(context.app_name)
         
-        # Try AI decision first if available
-        if self.llm_provider and self.llm_provider.is_available():
+          # Try AI decision with automatic fallback
+        if self.fallback_manager.is_any_available():
             try:
                 decision = self._ai_decision(context)
                 if decision:
                     decision.requires_confirmation = needs_confirmation
                     return decision
             except Exception as e:
-                logger.error(f"AI decision failed: {e}. Falling back to rules.")
+                logger.error(f"All AI providers failed: {e}. Falling back to rules.")
         
         # Fallback to rule-based decision
         decision = self._rule_based_decision(context)
@@ -99,7 +76,7 @@ class DecisionEngine:
     
     def _ai_decision(self, context: DialogContext) -> Optional[AIDecision]:
         """
-        Use AI to make a decision.
+        Use AI to make a decision with automatic fallback.
         
         Args:
             context: Dialog context
@@ -107,7 +84,7 @@ class DecisionEngine:
         Returns:
             AIDecision or None
         """
-        if not self.llm_provider:
+        if not self.fallback_manager.is_any_available():
             return None
         
         # Build prompt
@@ -130,7 +107,8 @@ Which option should I choose? Consider:
 Choose the option number and explain briefly."""
         
         try:
-            result = self.llm_provider.generate_structured(
+            # Use fallback manager for automatic provider switching
+            result = self.fallback_manager.generate_structured(
                 prompt=prompt,
                 options=options,
                 system_prompt=system_prompt

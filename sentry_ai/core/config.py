@@ -27,8 +27,17 @@ class Settings(BaseSettings):
     ollama_host: str = Field(default="http://localhost:11434", description="Ollama API endpoint")
     ollama_model: str = Field(default="phi3:mini", description="Ollama model to use")
     
-    # API Keys (set via environment variables)
-    # GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY
+    # API Keys (optional, set via environment variables)
+    gemini_api_key: Optional[str] = Field(default=None, description="Google Gemini API key")
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
+    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic Claude API key")
+    
+    # LLM Fallback Configuration
+    llm_fallback_enabled: bool = Field(default=True, description="Enable automatic fallback to other providers")
+    llm_fallback_order: List[str] = Field(
+        default=["claude", "openai", "gemini", "ollama"],
+        description="Order of LLM providers to try (fallback chain)"
+    )
     
     # Observer Settings
     observer_interval: float = Field(default=2.0, ge=0.5, description="Polling interval in seconds")
@@ -77,6 +86,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env
 
 
 # Global settings instance
