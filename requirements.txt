@@ -13,10 +13,10 @@ pyobjc-framework-ApplicationServices==10.3.1
 pyobjc-framework-Vision==10.3.1
 
 # AI/LLM Integration
-ollama==0.3.3
-google-genai==1.47.0
-openai==1.57.2
-anthropic==0.42.0
+ollama>=0.3.0,<0.4.0
+google-genai>=1.40.0
+openai>=1.50.0,<2.0.0
+anthropic>=0.40.0,<1.0.0
 
 # Database
 sqlalchemy==2.0.36
