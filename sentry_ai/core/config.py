@@ -1,0 +1,111 @@
+"""
+Configuration module for Sentry-AI.
+
+This module handles all configuration settings for the application,
+including environment variables, application settings, and security policies.
+"""
+
+from typing import List, Optional
+from pydantic_settings import BaseSettings
+from pydantic import Field
+
+
+class Settings(BaseSettings):
+    """Application settings and configuration."""
+    
+    # Application Info
+    app_name: str = "Sentry-AI"
+    app_version: str = "1.0.0"
+    debug: bool = False
+    
+    # Ollama Configuration
+    ollama_host: str = Field(default="http://localhost:11434", description="Ollama API endpoint")
+    ollama_model: str = Field(default="phi3:mini", description="Default LLM model to use")
+    ollama_temperature: float = Field(default=0.1, ge=0.0, le=1.0, description="LLM temperature for decision making")
+    
+    # Observer Settings
+    observer_interval: float = Field(default=2.0, ge=0.5, description="Polling interval in seconds")
+    observer_enabled: bool = True
+    
+    # Security Settings
+    blacklist_apps: List[str] = Field(
+        default=[
+            "Terminal",
+            "iTerm",
+            "Keychain Access",
+            "System Preferences",
+            "System Settings",
+            "Activity Monitor",
+            "Disk Utility",
+        ],
+        description="Applications that should never be automated"
+    )
+    
+    whitelist_apps: Optional[List[str]] = Field(
+        default=None,
+        description="If set, only these applications will be automated"
+    )
+    
+    require_confirmation_for: List[str] = Field(
+        default=["Finder", "Mail"],
+        description="Applications that require user confirmation before action"
+    )
+    
+    # Database Settings
+    database_url: str = Field(
+        default="sqlite:///./sentry_ai.db",
+        description="Database connection URL"
+    )
+    
+    # Logging Settings
+    log_level: str = Field(default="INFO", description="Logging level")
+    log_file: str = Field(default="sentry_ai.log", description="Log file path")
+    log_retention_days: int = Field(default=30, description="Number of days to keep logs")
+    
+    # API Settings
+    api_host: str = Field(default="127.0.0.1", description="API host")
+    api_port: int = Field(default=8000, description="API port")
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
+
+
+# Global settings instance
+settings = Settings()
+
+
+def is_app_allowed(app_name: str) -> bool:
+    """
+    Check if an application is allowed to be automated.
+    
+    Args:
+        app_name: Name of the application to check
+        
+    Returns:
+        True if the app can be automated, False otherwise
+    """
+    # Check blacklist first
+    if app_name in settings.blacklist_apps:
+        return False
+    
+    # If whitelist is set, only allow whitelisted apps
+    if settings.whitelist_apps is not None:
+        return app_name in settings.whitelist_apps
+    
+    # Otherwise, allow by default
+    return True
+
+
+def requires_confirmation(app_name: str) -> bool:
+    """
+    Check if an application requires user confirmation before automation.
+    
+    Args:
+        app_name: Name of the application to check
+        
+    Returns:
+        True if confirmation is required, False otherwise
+    """
+    return app_name in settings.require_confirmation_for
