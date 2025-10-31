@@ -242,4 +242,4 @@ Ce projet est sous licence MIT. Voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-**Développé avec ❤️ pour la communauté macOS**
+**Développé avec Mikail Lekesiz pour la communauté macOS**
