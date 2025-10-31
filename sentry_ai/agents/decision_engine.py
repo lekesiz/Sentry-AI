@@ -5,7 +5,7 @@ This module implements the Decision Engine that uses a local LLM (via Ollama)
 to make intelligent decisions about how to respond to dialogs.
 """
 
-from typing import Optional
+from typing import Optional, List
 from loguru import logger
 
 try:

@@ -14,6 +14,16 @@ from .agents import Observer, Analyzer, DecisionEngine, Actor
 from .models.data_models import ObserverEvent, Action, ActionType
 
 
+# Global system state
+_system_state = {
+    "is_running": False,
+    "start_time": None,
+    "observer_active": False,
+    "ollama_available": False,
+    "actions_performed_today": 0
+}
+
+
 class SentryAI:
     """Main application class that orchestrates all agents."""
     
