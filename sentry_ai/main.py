@@ -9,6 +9,7 @@ import time
 from loguru import logger
 
 from .core.config import settings
+from .core.database import db_manager
 from .agents import Observer, Analyzer, DecisionEngine, Actor
 from .models.data_models import ObserverEvent, Action, ActionType
 
@@ -103,13 +104,31 @@ class SentryAI:
                 target_element=target_element
             )
             
+            # Measure execution time
+            start_time = time.time()
             success = self.actor.execute(action)
+            execution_time = (time.time() - start_time) * 1000  # Convert to ms
+            
+            # Log to database
+            db_manager.log_action(
+                app_name=event.app_name,
+                window_title=context.window_title,
+                dialog_type=context.dialog_type.value,
+                question=context.question,
+                options=context.options,
+                chosen_option=decision.chosen_option,
+                success=success,
+                execution_time_ms=execution_time,
+                ai_confidence=decision.confidence,
+                ai_reasoning=decision.reasoning
+            )
             
             if success:
                 logger.success(
                     f"Successfully automated {event.app_name}: "
-                    f"clicked '{decision.chosen_option}'"
+                    f"clicked '{decision.chosen_option}' ({execution_time:.1f}ms)"
                 )
+                _system_state["actions_performed_today"] += 1
             else:
                 logger.error(f"Failed to execute action")
         

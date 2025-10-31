@@ -153,6 +153,74 @@ class Analyzer:
         Returns:
             DialogContext object or None if analysis fails
         """
-        # TODO: Implement OCR using Apple Vision Framework
-        logger.warning("OCR analysis not yet implemented")
-        return None
+        try:
+            from ..utils.ocr_helper import ocr_helper
+            
+            # Extract text from screenshot
+            extracted = ocr_helper.extract_text_from_image(screenshot_path)
+            
+            if not extracted:
+                logger.warning("No text extracted from screenshot")
+                return None
+            
+            # Combine all extracted text
+            all_text = " ".join([text for text, _ in extracted])
+            
+            # Try to identify button-like text (simple heuristic)
+            # Look for common button words
+            button_keywords = [
+                "yes", "no", "ok", "cancel", "save", "don't save",
+                "oui", "non", "annuler", "enregistrer",
+                "evet", "hayır", "iptal", "kaydet"
+            ]
+            
+            found_buttons = []
+            for text, confidence in extracted:
+                text_lower = text.lower().strip()
+                if text_lower in button_keywords or len(text.split()) <= 2:
+                    found_buttons.append(text.strip())
+            
+            if not found_buttons:
+                logger.warning("No buttons identified in OCR text")
+                return None
+            
+            # The question is typically the longer text
+            question_parts = [
+                text for text, _ in extracted 
+                if len(text.split()) > 3 and text.strip() not in found_buttons
+            ]
+            question = " ".join(question_parts) if question_parts else all_text
+            
+            # Classify dialog type
+            dialog_type = self._classify_dialog_type(question, found_buttons)
+            
+            # Create mock UIElements for the buttons
+            elements = [
+                UIElement(
+                    role="AXButton",
+                    title=button,
+                    value=None
+                )
+                for button in found_buttons
+            ]
+            
+            context = DialogContext(
+                app_name=app_name,
+                window_title=None,
+                dialog_type=dialog_type,
+                question=question,
+                options=found_buttons,
+                elements=elements,
+                screenshot_path=screenshot_path
+            )
+            
+            logger.info(
+                f"Analyzed dialog via OCR: {dialog_type.value} "
+                f"with options: {found_buttons}"
+            )
+            
+            return context
+        
+        except Exception as e:
+            logger.error(f"Error in OCR analysis: {e}")
+            return None
