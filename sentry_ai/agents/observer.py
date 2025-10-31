@@ -55,6 +55,7 @@ class Observer:
         """Start the observer loop."""
         self.is_running = True
         logger.info("Observer started")
+        logger.info(f"Blacklisted apps: {settings.blacklist_apps}")
         
         while self.is_running:
             try:

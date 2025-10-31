@@ -6,8 +6,9 @@ including environment variables, application settings, and security policies.
 """
 
 from typing import List, Optional
+import json
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -81,6 +82,26 @@ class Settings(BaseSettings):
     # API Settings
     api_host: str = Field(default="127.0.0.1", description="API host")
     api_port: int = Field(default=8000, description="API port")
+    
+    @field_validator('blacklist_apps', 'whitelist_apps', 'require_confirmation_for', 'llm_fallback_order', mode='before')
+    @classmethod
+    def parse_json_list(cls, v):
+        """
+        Parse JSON array strings from .env file.
+        
+        Pydantic doesn't automatically parse JSON arrays from .env,
+        so we need to manually convert strings like '["Terminal"]' to lists.
+        """
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                return [parsed]  # Single value, wrap in list
+            except (json.JSONDecodeError, ValueError):
+                # If JSON parsing fails, treat as comma-separated values
+                return [x.strip() for x in v.split(',') if x.strip()]
+        return v
     
     class Config:
         env_file = ".env"
