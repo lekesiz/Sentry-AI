@@ -24,6 +24,7 @@ class ActionType(str, Enum):
     """Types of actions that can be performed."""
     CLICK_BUTTON = "click_button"
     PRESS_KEY = "press_key"
+    TYPE_TEXT = "type_text"
     DISMISS = "dismiss"
     WAIT = "wait"
 
@@ -45,11 +46,33 @@ class DialogContext(BaseModel):
     app_name: str = Field(..., description="Name of the application showing the dialog")
     window_title: Optional[str] = Field(None, description="Title of the window")
     dialog_type: DialogType = Field(DialogType.GENERIC, description="Type of dialog")
-    question: str = Field(..., description="The question or message shown to the user")
-    options: List[str] = Field(..., description="Available options (button labels)")
-    elements: List[UIElement] = Field(..., description="All UI elements in the dialog")
+    
+    # Support both old and new field names for compatibility
+    question: Optional[str] = Field(None, description="The question or message shown to the user")
+    dialog_title: Optional[str] = Field(None, description="Alias for window_title")
+    dialog_text: Optional[str] = Field(None, description="Alias for question")
+    
+    options: Optional[List[str]] = Field(None, description="Available options (button labels)")
+    available_options: Optional[List[str]] = Field(None, description="Alias for options")
+    
+    elements: List[UIElement] = Field(default_factory=list, description="All UI elements in the dialog")
     timestamp: datetime = Field(default_factory=datetime.now)
     screenshot_path: Optional[str] = Field(None, description="Path to screenshot if OCR was used")
+    
+    def __init__(self, **data):
+        # Handle aliases
+        if 'dialog_title' in data and 'window_title' not in data:
+            data['window_title'] = data['dialog_title']
+        if 'dialog_text' in data and 'question' not in data:
+            data['question'] = data['dialog_text']
+        if 'available_options' in data and 'options' not in data:
+            data['options'] = data['available_options']
+        super().__init__(**data)
+    
+    @property
+    def get_options(self) -> List[str]:
+        """Get options list (handles both field names)."""
+        return self.options or self.available_options or []
 
 
 class AIDecision(BaseModel):

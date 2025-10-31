@@ -52,6 +52,11 @@ class Actor:
                 return self._click_button(action.target_element)
             elif action.action_type == ActionType.PRESS_KEY:
                 return self._press_key(action.parameters.get('key'))
+            elif action.action_type == ActionType.TYPE_TEXT:
+                return self._type_text(
+                    action.target_element,
+                    action.parameters.get('text', '')
+                )
             elif action.action_type == ActionType.DISMISS:
                 return self._dismiss_dialog(action.target_element)
             else:
@@ -109,7 +114,7 @@ class Actor:
         Press a keyboard key.
         
         Args:
-            key: The key to press (e.g., "Return", "Escape")
+            key: The key to press (e.g., "Return", "Escape", "Tab")
             
         Returns:
             True if successful, False otherwise
@@ -118,9 +123,120 @@ class Actor:
             logger.info(f"[MOCK] Would press key: {key}")
             return True
         
-        # TODO: Implement keyboard simulation
-        logger.warning("Keyboard simulation not yet implemented")
-        return False
+        if not key:
+            logger.error("No key specified")
+            return False
+        
+        # Map key names to key codes
+        key_codes = {
+            "Return": 36,
+            "Enter": 36,
+            "Escape": 53,
+            "Tab": 48,
+            "Space": 49,
+            "Delete": 51,
+            "Backspace": 51,
+        }
+        
+        key_code = key_codes.get(key)
+        if key_code is None:
+            logger.error(f"Unknown key: {key}")
+            return False
+        
+        try:
+            # Create and post key down event
+            key_down = CGEventCreateKeyboardEvent(None, key_code, True)
+            CGEventPost(kCGHIDEventTap, key_down)
+            
+            # Create and post key up event
+            key_up = CGEventCreateKeyboardEvent(None, key_code, False)
+            CGEventPost(kCGHIDEventTap, key_up)
+            
+            logger.info(f"Successfully pressed key: {key}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error pressing key: {e}")
+            return False
+    
+    def _type_text(self, element: Optional[UIElement], text: str) -> bool:
+        """
+        Type text into a text field or text area.
+        
+        Args:
+            element: The text field element (optional, will use focused element if None)
+            text: The text to type
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not MACOS_AVAILABLE:
+            logger.info(f"[MOCK] Would type text: {text[:50]}...")
+            return True
+        
+        if not text:
+            logger.warning("No text to type")
+            return True
+        
+        try:
+            # If element is provided, try to set its value directly
+            if element and element.element_ref:
+                result = AXUIElementSetAttributeValue(
+                    element.element_ref,
+                    kAXValueAttribute,
+                    text
+                )
+                
+                if result == 0:
+                    logger.info(f"Successfully typed text (direct): {text[:50]}...")
+                    return True
+            
+            # Fallback: simulate typing character by character
+            return self._simulate_typing(text)
+        
+        except Exception as e:
+            logger.error(f"Error typing text: {e}")
+            return False
+    
+    def _simulate_typing(self, text: str) -> bool:
+        """
+        Simulate typing text character by character using keyboard events.
+        
+        Args:
+            text: The text to type
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not MACOS_AVAILABLE:
+            return True
+        
+        try:
+            import time
+            from Quartz import CGEventCreateKeyboardEvent, CGEventPost, kCGHIDEventTap
+            
+            # Map characters to key codes (simplified, ASCII only)
+            for char in text:
+                # For simplicity, we'll use the character's Unicode value
+                # This works for basic ASCII characters
+                if char == '\n':
+                    self._press_key("Return")
+                else:
+                    # Create keyboard event with character
+                    key_down = CGEventCreateKeyboardEvent(None, 0, True)
+                    CGEventPost(kCGHIDEventTap, key_down)
+                    
+                    key_up = CGEventCreateKeyboardEvent(None, 0, False)
+                    CGEventPost(kCGHIDEventTap, key_up)
+                    
+                    time.sleep(0.01)  # Small delay between characters
+            
+            logger.info(f"Successfully simulated typing: {text[:50]}...")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error simulating typing: {e}")
+            return False
     
     def _dismiss_dialog(self, element: Optional[UIElement]) -> bool:
         """

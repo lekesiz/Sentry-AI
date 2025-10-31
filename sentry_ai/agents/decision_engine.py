@@ -1,52 +1,64 @@
 """
 Decision Engine for Sentry-AI.
 
-This module implements the Decision Engine that uses a local LLM (via Ollama)
-to make intelligent decisions about how to respond to dialogs.
+This module implements the Decision Engine that uses multiple LLM providers
+(Ollama, Gemini, OpenAI, Claude) to make intelligent decisions about how to respond to dialogs.
 """
 
 from typing import Optional, List
 from loguru import logger
 
-try:
-    import ollama
-    OLLAMA_AVAILABLE = True
-except ImportError:
-    logger.warning("Ollama package not available. Decision Engine will use fallback logic.")
-    OLLAMA_AVAILABLE = False
-
 from ..models.data_models import DialogContext, AIDecision
 from ..core.config import settings, requires_confirmation
+from ..core.llm_provider import LLMProviderFactory, LLMProvider, BaseLLMProvider
+from .vscode_strategies import VSCodeStrategyManager
 
 
 class DecisionEngine:
     """
     Decision Engine that uses AI to decide how to respond to dialogs.
     
-    The engine sends context to a local LLM (via Ollama) and interprets
-    the response to make an informed decision.
+    Supports multiple LLM providers: Ollama, Gemini, OpenAI, Claude.
+    Falls back to rule-based logic if AI is unavailable.
     """
     
     def __init__(self):
         """Initialize the Decision Engine."""
-        self.ollama_available = self._check_ollama_availability()
+        self.llm_provider: Optional[BaseLLMProvider] = None
+        self._initialize_llm()
         
-        if not self.ollama_available:
-            logger.warning("Ollama not available. Using rule-based fallback.")
+        # Initialize VS Code strategy manager
+        self.vscode_strategies = VSCodeStrategyManager(llm_provider=self.llm_provider)
     
-    def _check_ollama_availability(self) -> bool:
-        """Check if Ollama is available and the model is loaded."""
-        if not OLLAMA_AVAILABLE:
-            return False
-        
+    def _initialize_llm(self):
+        """Initialize the configured LLM provider."""
         try:
-            # Try to list models to verify connection
-            ollama.list()
-            logger.info(f"Ollama is available. Using model: {settings.ollama_model}")
-            return True
+            provider_name = settings.llm_provider.lower()
+            provider_enum = LLMProvider(provider_name)
+            
+            # Get model from settings or use provider default
+            model = settings.llm_model
+            if not model and provider_name == "ollama":
+                model = settings.ollama_model
+            
+            self.llm_provider = LLMProviderFactory.create(
+                provider=provider_enum,
+                model=model,
+                temperature=settings.llm_temperature
+            )
+            
+            if self.llm_provider.is_available():
+                logger.info(f"LLM Provider initialized: {provider_name} with model {self.llm_provider.model}")
+            else:
+                logger.warning(f"LLM Provider {provider_name} not available. Using rule-based fallback.")
+                self.llm_provider = None
+        
+        except ValueError as e:
+            logger.error(f"Invalid LLM provider: {settings.llm_provider}. Using rule-based fallback.")
+            self.llm_provider = None
         except Exception as e:
-            logger.warning(f"Ollama not available: {e}")
-            return False
+            logger.error(f"Failed to initialize LLM provider: {e}. Using rule-based fallback.")
+            self.llm_provider = None
     
     def decide(self, context: DialogContext) -> Optional[AIDecision]:
         """
@@ -56,162 +68,156 @@ class DecisionEngine:
             context: The dialog context to analyze
             
         Returns:
-            AIDecision object or None if decision cannot be made
+            AIDecision with the chosen option and reasoning, or None if no decision
         """
-        try:
-            if self.ollama_available:
-                return self._decide_with_ai(context)
-            else:
-                return self._decide_with_rules(context)
+        # Check if this is a VS Code dialog - use specialized strategies
+        if "visual studio code" in context.app_name.lower() or "vscode" in context.app_name.lower():
+            decision = self.vscode_strategies.decide(context)
+            if decision:
+                logger.info(f"VS Code strategy decision: {decision.chosen_option}")
+                return decision
         
-        except Exception as e:
-            logger.error(f"Error making decision: {e}")
-            return None
+        # Check if this app requires confirmation
+        needs_confirmation = requires_confirmation(context.app_name)
+        
+        # Try AI decision first if available
+        if self.llm_provider and self.llm_provider.is_available():
+            try:
+                decision = self._ai_decision(context)
+                if decision:
+                    decision.requires_confirmation = needs_confirmation
+                    return decision
+            except Exception as e:
+                logger.error(f"AI decision failed: {e}. Falling back to rules.")
+        
+        # Fallback to rule-based decision
+        decision = self._rule_based_decision(context)
+        if decision:
+            decision.requires_confirmation = needs_confirmation
+        
+        return decision
     
-    def _decide_with_ai(self, context: DialogContext) -> Optional[AIDecision]:
+    def _ai_decision(self, context: DialogContext) -> Optional[AIDecision]:
         """
-        Use the LLM to make a decision.
+        Use AI to make a decision.
         
         Args:
-            context: The dialog context
+            context: Dialog context
             
         Returns:
-            AIDecision object or None
+            AIDecision or None
         """
+        if not self.llm_provider:
+            return None
+        
+        # Build prompt
+        system_prompt = """You are an AI assistant helping to automate dialog responses on macOS.
+Your task is to choose the most appropriate option based on the context.
+Be conservative and prefer safe options (like Save over Don't Save)."""
+        
+        options = context.get_options
+        prompt = f"""Application: {context.app_name}
+Dialog Title: {context.window_title or context.dialog_title or 'Unknown'}
+Dialog Text: {context.question or context.dialog_text or 'No text'}
+
+Available options: {', '.join(options)}
+
+Which option should I choose? Consider:
+1. Safety (don't lose data)
+2. User intent (what would the user likely want?)
+3. Context (what was the user doing?)
+
+Choose the option number and explain briefly."""
+        
         try:
-            # Construct the prompt
-            prompt = self._build_prompt(context)
-            
-            # Call Ollama
-            response = ollama.chat(
-                model=settings.ollama_model,
-                messages=[{'role': 'user', 'content': prompt}],
-                options={'temperature': settings.ollama_temperature}
+            result = self.llm_provider.generate_structured(
+                prompt=prompt,
+                options=options,
+                system_prompt=system_prompt
             )
             
-            # Extract the decision
-            ai_response = response['message']['content'].strip()
-            
-            # Find the matching option
-            chosen_option = self._match_option(ai_response, context.options)
-            
-            if not chosen_option:
-                logger.warning(f"AI response '{ai_response}' doesn't match any option")
-                return None
-            
-            # Check if confirmation is required
-            needs_confirmation = requires_confirmation(context.app_name)
-            
-            decision = AIDecision(
-                chosen_option=chosen_option,
-                confidence=0.8,  # TODO: Extract confidence from LLM
-                reasoning=ai_response,
-                requires_confirmation=needs_confirmation
+            return AIDecision(
+                chosen_option=result["choice"],
+                reasoning=result["reasoning"],
+                confidence=result.get("confidence", 0.8),
+                requires_confirmation=False  # Will be set by caller
             )
-            
-            logger.info(
-                f"AI decision: '{chosen_option}' "
-                f"(confirmation required: {needs_confirmation})"
-            )
-            
-            return decision
         
         except Exception as e:
-            logger.error(f"Error in AI decision: {e}")
+            logger.error(f"LLM generation failed: {e}")
             return None
     
-    def _build_prompt(self, context: DialogContext) -> str:
+    def _rule_based_decision(self, context: DialogContext) -> Optional[AIDecision]:
         """
-        Build the prompt for the LLM.
+        Fallback rule-based decision logic.
         
         Args:
-            context: The dialog context
+            context: Dialog context
             
         Returns:
-            Formatted prompt string
+            AIDecision or None
         """
-        prompt = f"""You are an intelligent macOS automation assistant. A dialog has appeared and you need to decide which action to take.
-
-Application: {context.app_name}
-Dialog Type: {context.dialog_type.value}
-Question/Message: {context.question}
-Available Options: {', '.join(context.options)}
-
-Your task is to analyze this dialog and choose the most appropriate option. Consider:
-1. The user's likely intent (e.g., saving work is usually preferred)
-2. Safety (avoid destructive actions when uncertain)
-3. Common sense (e.g., "Save" is usually better than "Don't Save")
-
-Respond with ONLY the exact text of one of the available options. Do not add any explanation or additional text.
-
-Your choice:"""
+        options = context.get_options
+        if not options:
+            return None
         
-        return prompt
+        # Common patterns
+        save_keywords = ["save", "enregistrer", "sauvegarder", "yes", "oui"]
+        cancel_keywords = ["cancel", "annuler", "no", "non"]
+        
+        # Try to match common patterns
+        for option in options:
+            option_lower = option.lower()
+            
+            # Prefer "Save" options
+            if any(keyword in option_lower for keyword in save_keywords):
+                return AIDecision(
+                    chosen_option=option,
+                    reasoning="Rule-based: Prefer saving to avoid data loss",
+                    confidence=0.7,
+                    requires_confirmation=False
+                )
+        
+        # If no save option, prefer first non-cancel option
+        for option in options:
+            option_lower = option.lower()
+            if not any(keyword in option_lower for keyword in cancel_keywords):
+                return AIDecision(
+                    chosen_option=option,
+                    reasoning="Rule-based: Choose first non-cancel option",
+                    confidence=0.6,
+                    requires_confirmation=False
+                )
+        
+        # Last resort: first option
+        return AIDecision(
+            chosen_option=options[0],
+            reasoning="Rule-based: Default to first option",
+            confidence=0.5,
+            requires_confirmation=False
+        )
     
-    def _match_option(self, ai_response: str, options: List[str]) -> Optional[str]:
+    def match_option(self, target: str, options: List[str]) -> Optional[str]:
         """
-        Match the AI response to one of the available options.
+        Find the best matching option for a target string.
         
         Args:
-            ai_response: The response from the AI
+            target: Target string to match
             options: List of available options
             
         Returns:
-            The matched option or None
+            Best matching option or None
         """
-        ai_response_lower = ai_response.lower()
+        target_lower = target.lower()
         
-        # Try exact match first
+        # Exact match
         for option in options:
-            if option.lower() == ai_response_lower:
+            if option.lower() == target_lower:
                 return option
         
-        # Try partial match
+        # Partial match
         for option in options:
-            if option.lower() in ai_response_lower or ai_response_lower in option.lower():
+            if target_lower in option.lower() or option.lower() in target_lower:
                 return option
         
-        return None
-    
-    def _decide_with_rules(self, context: DialogContext) -> Optional[AIDecision]:
-        """
-        Use rule-based logic as a fallback when AI is not available.
-        
-        Args:
-            context: The dialog context
-            
-        Returns:
-            AIDecision object or None
-        """
-        # Simple rule-based logic
-        options_lower = [opt.lower() for opt in context.options]
-        
-        # Prefer "Save" over "Don't Save"
-        if "save" in options_lower or "enregistrer" in options_lower:
-            chosen = context.options[
-                next(i for i, opt in enumerate(options_lower) 
-                     if "save" in opt or "enregistrer" in opt)
-            ]
-            return AIDecision(
-                chosen_option=chosen,
-                confidence=0.6,
-                reasoning="Rule-based: Prefer saving work",
-                requires_confirmation=True
-            )
-        
-        # Prefer "Allow" over "Deny" for permissions
-        if "allow" in options_lower or "autoriser" in options_lower:
-            chosen = context.options[
-                next(i for i, opt in enumerate(options_lower) 
-                     if "allow" in opt or "autoriser" in opt)
-            ]
-            return AIDecision(
-                chosen_option=chosen,
-                confidence=0.5,
-                reasoning="Rule-based: Allow permission (low confidence)",
-                requires_confirmation=True
-            )
-        
-        # Default: don't make a decision if unsure
-        logger.warning("No rule matched, cannot make decision")
         return None

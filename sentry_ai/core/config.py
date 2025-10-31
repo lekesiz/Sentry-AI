@@ -18,10 +18,17 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     
-    # Ollama Configuration
+    # LLM Configuration
+    llm_provider: str = Field(default="ollama", description="LLM provider to use (ollama, gemini, openai, claude)")
+    llm_model: Optional[str] = Field(default=None, description="Model name (provider-specific, None for default)")
+    llm_temperature: float = Field(default=0.1, ge=0.0, le=1.0, description="LLM temperature for decision making")
+    
+    # Ollama Configuration (when using ollama provider)
     ollama_host: str = Field(default="http://localhost:11434", description="Ollama API endpoint")
-    ollama_model: str = Field(default="phi3:mini", description="Default LLM model to use")
-    ollama_temperature: float = Field(default=0.1, ge=0.0, le=1.0, description="LLM temperature for decision making")
+    ollama_model: str = Field(default="phi3:mini", description="Ollama model to use")
+    
+    # API Keys (set via environment variables)
+    # GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY
     
     # Observer Settings
     observer_interval: float = Field(default=2.0, ge=0.5, description="Polling interval in seconds")

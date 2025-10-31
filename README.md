@@ -25,6 +25,33 @@ Les utilisateurs de macOS sont constamment interrompus par des boîtes de dialog
 
 ## ✨ Caractéristiques Principales
 
+### 🎯 Multi-LLM Support (NOUVEAU!)
+
+Sentry-AI supporte maintenant **4 fournisseurs de LLM** :
+- **Ollama** (local, gratuit, privé)
+- **Google Gemini** (cloud, rapide, performant)
+- **OpenAI** (cloud, précis, fiable)
+- **Anthropic Claude** (cloud, intelligent, contextuel)
+
+Choisissez votre provider préféré dans `.env` :
+
+```bash
+LLM_PROVIDER=gemini  # ou ollama, openai, claude
+GEMINI_API_KEY=votre_cle_api
+```
+
+📚 [Guide Multi-LLM Complet](docs/MULTI_LLM_GUIDE.md)
+
+### 🤖 VS Code Integration (NOUVEAU!)
+
+Sentry-AI peut maintenant **automatiser les dialogues de Claude Code** dans Visual Studio Code :
+- ✅ Approuve automatiquement les commandes bash sûres
+- ✅ Répond intelligemment aux questions de Claude
+- ✅ Gère les demandes d'édition automatique
+- ✅ Détecte et filtre les commandes dangereuses
+
+📚 [Guide VS Code Automation](docs/VSCODE_AUTOMATION_GUIDE.md)
+
 ### 🔒 Confidentialité Absolue
 
 *   **100% Local :** Toutes les données (captures d'écran, textes, décisions) sont traitées localement sur votre Mac.
@@ -147,9 +174,15 @@ make run
 
 ## 📖 Documentation
 
+### Guides Principaux
 *   [Plan de Projet et Architecture](PROJECT_PLAN.md)
-*   [Documentation API](docs/api.md) *(à venir)*
-*   [Guide de Contribution](CONTRIBUTING.md) *(à venir)*
+*   [Guide de Démarrage Rapide](QUICKSTART.md)
+*   [Guide de Test](TESTING_GUIDE.md)
+
+### Guides Spécialisés
+*   [Support Multi-LLM](docs/MULTI_LLM_GUIDE.md) - Comment utiliser Gemini, OpenAI, Claude
+*   [Automatisation VS Code](docs/VSCODE_AUTOMATION_GUIDE.md) - Automatiser Claude Code
+*   [Rapport d'Audit Final](FINAL_AUDIT_REPORT.md) - Résultats des tests
 
 ---
 
