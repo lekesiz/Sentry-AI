@@ -1,7 +1,7 @@
 # 🤖 Sentry-AI - Cognitive Automation Agent for macOS
 
-**Version:** 1.0.0  
-**Status:** 🚧 In Development  
+**Version:** 1.1.0
+**Status:** ✅ Production Ready
 **License:** MIT
 
 > **Un agent d'automatisation cognitive qui observe, comprend et agit sur votre environnement macOS de manière intelligente et sécurisée.**
@@ -62,7 +62,19 @@ Sentry-AI peut maintenant **automatiser les dialogues de Claude Code** dans Visu
 
 *   **Native macOS :** Utilise les API d'accessibilité natives pour une intégration parfaite.
 *   **Apple Silicon Ready :** Optimisé pour les puces M1/M2/M3/M4 avec Neural Engine.
-*   **Faible Impact :** Architecture événementielle pour minimiser l'utilisation du CPU et de la batterie.
+*   **Architecture Événementielle :** ~0% CPU en idle, réponse instantanée (<50ms).
+*   **Menu Bar UI :** Interface native macOS professionnelle.
+
+### 🎯 8+ Applications Supportées
+
+*   **TextEdit, Notes :** Gestion intelligente des sauvegardes
+*   **Finder :** Protection contre suppressions accidentelles
+*   **Safari :** Téléchargements et navigation automatisés
+*   **Mail :** Gestion des emails et pièces jointes
+*   **Xcode :** Automatisation du développement
+*   **Photos :** Importation et gestion optimisées
+*   **Slack :** Notifications et mises à jour
+*   **VS Code :** Intégration Claude Code complète
 
 ### 🧠 Intelligence Contextuelle
 
@@ -107,9 +119,9 @@ Pour plus de détails, consultez [PROJECT_PLAN.md](PROJECT_PLAN.md).
 
 ---
 
-## 🚀 Installation
+## 🚀 Démarrage Rapide
 
-### Installation Automatique (Recommandée)
+### Installation Simple (Recommandée)
 
 Utilisez le script d'installation automatique :
 
@@ -130,7 +142,25 @@ Ensuite, suivez les instructions affichées pour :
 1. Démarrer Ollama (`ollama serve`)
 2. Télécharger le modèle (`ollama pull phi3:mini`)
 3. Accorder les permissions d'accessibilité
-4. Lancer Sentry-AI (`make run`)
+4. **Lancer Menu Bar UI (`make menubar`)** ← Recommandé !
+
+### Utilisation
+
+**Interface Menu Bar (Recommandée) :**
+```bash
+make menubar
+```
+Cliquez sur l'icône dans la barre de menus → Start Sentry-AI
+
+**Interface Terminal (Alternative) :**
+```bash
+make run
+```
+
+**Lancer Tests Utilisateur :**
+```bash
+make user-test
+```
 
 ### Installation Manuelle
 

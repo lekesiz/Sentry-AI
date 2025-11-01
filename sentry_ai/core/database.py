@@ -260,6 +260,51 @@ class DatabaseManager:
         finally:
             session.close()
 
+    def get_today_stats(self) -> Dict[str, Any]:
+        """
+        Get statistics for today only.
+
+        Returns:
+            Dictionary with today's statistics
+        """
+        session = self.get_session()
+        try:
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+            actions = session.query(ActionLogDB)\
+                .filter(ActionLogDB.timestamp >= today_start)\
+                .all()
+
+            count = len(actions)
+            successful = sum(1 for a in actions if a.success)
+
+            return {
+                "count": count,
+                "successful": successful,
+                "failed": count - successful
+            }
+
+        finally:
+            session.close()
+
+    def get_total_stats(self) -> Dict[str, Any]:
+        """
+        Get all-time statistics.
+
+        Returns:
+            Dictionary with total statistics
+        """
+        session = self.get_session()
+        try:
+            total_count = session.query(ActionLogDB).count()
+
+            return {
+                "count": total_count
+            }
+
+        finally:
+            session.close()
+
 
 # Global database manager instance
 db_manager = DatabaseManager()

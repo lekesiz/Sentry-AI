@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     # Observer Settings
     observer_interval: float = Field(default=2.0, ge=0.5, description="Polling interval in seconds")
     observer_enabled: bool = True
+    event_driven_mode: bool = Field(default=True, description="Use event-driven observer instead of polling")
     
     # Security Settings
     blacklist_apps: List[str] = Field(

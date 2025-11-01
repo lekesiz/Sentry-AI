@@ -1,4 +1,4 @@
-.PHONY: help install test run api clean lint format
+.PHONY: help install test run api menubar user-test clean lint format
 
 help:
 	@echo "Sentry-AI - Makefile Commands"
@@ -8,7 +8,9 @@ help:
 	@echo "test-unit   - Run unit tests only"
 	@echo "test-int    - Run integration tests only"
 	@echo "run         - Run Sentry-AI main application"
+	@echo "menubar     - Run Menu Bar UI (recommended)"
 	@echo "api         - Run API server"
+	@echo "user-test   - Run user testing framework"
 	@echo "clean       - Clean up generated files"
 	@echo "lint        - Run linters (flake8)"
 	@echo "format      - Format code with black"
@@ -34,6 +36,12 @@ run:
 
 api:
 	python run_api.py
+
+menubar:
+	python run_menubar.py
+
+user-test:
+	python user_testing_framework.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

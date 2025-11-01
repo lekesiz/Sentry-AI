@@ -10,7 +10,7 @@ from loguru import logger
 
 from .core.config import settings
 from .core.database import db_manager
-from .agents import Observer, Analyzer, DecisionEngine, Actor
+from .agents import Observer, EventDrivenObserver, Analyzer, DecisionEngine, Actor
 from .models.data_models import ObserverEvent, Action, ActionType
 
 
@@ -39,7 +39,14 @@ class SentryAI:
         self.analyzer = Analyzer()
         self.decision_engine = DecisionEngine()
         self.actor = Actor()
-        self.observer = Observer(callback=self.on_dialog_detected)
+
+        # Choose observer type based on configuration
+        if settings.event_driven_mode:
+            logger.info("🚀 Using Event-Driven Observer (high performance mode)")
+            self.observer = EventDrivenObserver(callback=self.on_dialog_detected)
+        else:
+            logger.info("⏱️  Using Polling Observer (legacy mode)")
+            self.observer = Observer(callback=self.on_dialog_detected)
         
         self.is_running = False
         

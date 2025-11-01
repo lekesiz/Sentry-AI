@@ -13,6 +13,7 @@ from ..core.config import settings, requires_confirmation
 from ..core.llm_provider import LLMProviderFactory, LLMProvider, BaseLLMProvider
 from ..core.llm_fallback import fallback_manager
 from .vscode_strategies import VSCodeStrategyManager
+from .app_strategies import strategy_manager
 
 
 class DecisionEngine:
@@ -40,10 +41,10 @@ class DecisionEngine:
     def decide(self, context: DialogContext) -> Optional[AIDecision]:
         """
         Make a decision about how to respond to a dialog.
-        
+
         Args:
             context: The dialog context to analyze
-            
+
         Returns:
             AIDecision with the chosen option and reasoning, or None if no decision
         """
@@ -53,7 +54,18 @@ class DecisionEngine:
             if decision:
                 logger.info(f"VS Code strategy decision: {decision.chosen_option}")
                 return decision
-        
+
+        # Try application-specific strategy first
+        app_decision = strategy_manager.decide(context.__dict__)
+        if app_decision:
+            logger.info(f"App strategy decision: {app_decision.chosen_option}")
+            return AIDecision(
+                chosen_option=app_decision.chosen_option,
+                confidence=app_decision.confidence,
+                reasoning=app_decision.reasoning,
+                requires_confirmation=app_decision.requires_confirmation
+            )
+
         # Check if this app requires confirmation
         needs_confirmation = requires_confirmation(context.app_name)
         
