@@ -27,6 +27,11 @@ python-dotenv==1.0.1
 loguru==0.7.2
 pillow==11.0.0
 
+# Computer Use - Screen capture and automation
+pyautogui==0.9.54
+pyscreeze==0.1.30
+mss==9.0.1
+
 # macOS Menu Bar UI
 rumps==0.4.0
 

@@ -45,7 +45,7 @@ class NotificationHandler(NSObject):
 
     def initWithCallback_(self, callback):
         """Initialize with callback function"""
-        self = super().init()
+        self = NSObject.init(self)
         if self is None:
             return None
         self.callback = callback

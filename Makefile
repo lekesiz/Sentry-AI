@@ -1,20 +1,25 @@
-.PHONY: help install test run api menubar user-test clean lint format
+.PHONY: help install test run api menubar user-test clean lint format daemon-install daemon-start daemon-stop daemon-restart daemon-status
 
 help:
 	@echo "Sentry-AI - Makefile Commands"
 	@echo "=============================="
-	@echo "install     - Install dependencies"
-	@echo "test        - Run all tests"
-	@echo "test-unit   - Run unit tests only"
-	@echo "test-int    - Run integration tests only"
-	@echo "run         - Run Sentry-AI main application"
-	@echo "menubar     - Run Menu Bar UI (recommended)"
-	@echo "api         - Run API server"
-	@echo "user-test   - Run user testing framework"
-	@echo "clean       - Clean up generated files"
-	@echo "lint        - Run linters (flake8)"
-	@echo "format      - Format code with black"
-	@echo "coverage    - Run tests with coverage report"
+	@echo "install         - Install dependencies"
+	@echo "test            - Run all tests"
+	@echo "test-unit       - Run unit tests only"
+	@echo "test-int        - Run integration tests only"
+	@echo "run             - Run Sentry-AI main application"
+	@echo "menubar         - Run Menu Bar UI (recommended)"
+	@echo "api             - Run API server"
+	@echo "user-test       - Run user testing framework"
+	@echo "daemon-install  - Install as auto-start daemon"
+	@echo "daemon-start    - Start background daemon"
+	@echo "daemon-stop     - Stop background daemon"
+	@echo "daemon-restart  - Restart background daemon"
+	@echo "daemon-status   - Check daemon status"
+	@echo "clean           - Clean up generated files"
+	@echo "lint            - Run linters (flake8)"
+	@echo "format          - Format code with black"
+	@echo "coverage        - Run tests with coverage report"
 
 install:
 	pip install -r requirements.txt
@@ -66,3 +71,26 @@ check:
 	@echo "\nRunning tests..."
 	@make test
 	@echo "\nAll checks passed!"
+
+daemon-install:
+	@echo "Installing Sentry-AI as auto-start daemon..."
+	@./install_daemon.sh
+
+daemon-start:
+	@echo "Starting Sentry-AI daemon..."
+	@launchctl load ~/Library/LaunchAgents/com.sentry-ai.daemon.plist
+	@echo "✅ Daemon started"
+
+daemon-stop:
+	@echo "Stopping Sentry-AI daemon..."
+	@launchctl unload ~/Library/LaunchAgents/com.sentry-ai.daemon.plist
+	@echo "✅ Daemon stopped"
+
+daemon-restart:
+	@echo "Restarting Sentry-AI daemon..."
+	@launchctl kickstart -k gui/$$(id -u)/com.sentry-ai.daemon
+	@echo "✅ Daemon restarted"
+
+daemon-status:
+	@echo "Sentry-AI Daemon Status:"
+	@launchctl list | grep sentry-ai || echo "❌ Daemon not running"
