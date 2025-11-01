@@ -1,0 +1,169 @@
+{
+  "name": "sentry-ai",
+  "displayName": "Sentry-AI",
+  "description": "AI-powered automation assistant for VS Code - Auto-handle dialogs with vision AI",
+  "version": "1.2.0",
+  "publisher": "sentry-ai",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "automation",
+    "assistant",
+    "claude",
+    "vision"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sentry-ai.start",
+        "title": "Sentry-AI: Start Automation",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sentry-ai.stop",
+        "title": "Sentry-AI: Stop Automation",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sentry-ai.restart",
+        "title": "Sentry-AI: Restart",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sentry-ai.showStatus",
+        "title": "Sentry-AI: Show Status",
+        "icon": "$(info)"
+      },
+      {
+        "command": "sentry-ai.showLogs",
+        "title": "Sentry-AI: Show Activity Logs",
+        "icon": "$(output)"
+      },
+      {
+        "command": "sentry-ai.settings",
+        "title": "Sentry-AI: Open Settings",
+        "icon": "$(settings-gear)"
+      }
+    ],
+    "configuration": {
+      "title": "Sentry-AI",
+      "properties": {
+        "sentry-ai.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Sentry-AI automation"
+        },
+        "sentry-ai.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically start Sentry-AI when VS Code opens"
+        },
+        "sentry-ai.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Python executable (leave empty to use system Python)"
+        },
+        "sentry-ai.sentryPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Sentry-AI installation directory"
+        },
+        "sentry-ai.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when Sentry-AI handles dialogs"
+        },
+        "sentry-ai.logLevel": {
+          "type": "string",
+          "enum": [
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR"
+          ],
+          "default": "INFO",
+          "description": "Logging level"
+        },
+        "sentry-ai.observerInterval": {
+          "type": "number",
+          "default": 2.0,
+          "description": "Observer check interval in seconds"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sentry-ai-container",
+          "title": "Sentry-AI",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "views": {
+      "sentry-ai-container": [
+        {
+          "id": "sentry-ai-status",
+          "name": "Status"
+        },
+        {
+          "id": "sentry-ai-activity",
+          "name": "Activity Log"
+        },
+        {
+          "id": "sentry-ai-stats",
+          "name": "Statistics"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "sentry-ai.start",
+          "when": "view == sentry-ai-status",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sentry-ai.stop",
+          "when": "view == sentry-ai-status",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sentry-ai.restart",
+          "when": "view == sentry-ai-status",
+          "group": "navigation@3"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "ts-loader": "^9.0.0",
+    "typescript": "^5.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "dependencies": {}
+}

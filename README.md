@@ -1,7 +1,7 @@
 # 🤖 Sentry-AI - Cognitive Automation Agent for macOS
 
-**Version:** 1.1.0
-**Status:** ✅ Production Ready
+**Version:** 1.2.0
+**Status:** ✅ Production Ready with Vision AI
 **License:** MIT
 
 > **Un agent d'automatisation cognitive qui observe, comprend et agit sur votre environnement macOS de manière intelligente et sécurisée.**
@@ -42,15 +42,28 @@ GEMINI_API_KEY=votre_cle_api
 
 📚 [Guide Multi-LLM Complet](docs/MULTI_LLM_GUIDE.md)
 
-### 🤖 VS Code Integration (NOUVEAU!)
+### 🖥️ Computer Use with Vision AI (NOUVEAU!)
 
-Sentry-AI peut maintenant **automatiser les dialogues de Claude Code** dans Visual Studio Code :
-- ✅ Approuve automatiquement les commandes bash sûres
-- ✅ Répond intelligemment aux questions de Claude
-- ✅ Gère les demandes d'édition automatique
-- ✅ Détecte et filtre les commandes dangereuses
+Sentry-AI utilise maintenant **Claude Opus 4 avec Vision AI** pour voir et comprendre votre écran :
+- ✅ **Screenshot Analysis**: Capture et analyse l'écran en temps réel
+- ✅ **Dialog Detection**: Détecte automatiquement les dialogues visuellement
+- ✅ **Smart Clicking**: Clique automatiquement sur les bons boutons
+- ✅ **VS Code Extension**: Contrôle et monitoring depuis VS Code
+- ✅ **Background Daemon**: Fonctionne silencieusement en arrière-plan
 
-📚 [Guide VS Code Automation](docs/VSCODE_AUTOMATION_GUIDE.md)
+📚 [Computer Use Guide](COMPUTER_USE_INTEGRATION.md)
+
+### 🔌 VS Code Extension (NOUVEAU!)
+
+Extension VS Code intégrée pour contrôler Sentry-AI :
+- ✅ **Start/Stop**: Contrôle direct depuis VS Code
+- ✅ **Activity Log**: Voir toutes les actions en temps réel
+- ✅ **Statistics**: Suivi des actions automatisées
+- ✅ **Status Bar**: Indicateur d'état en temps réel
+- ✅ **Notifications**: Alertes optionnelles pour chaque action
+- ✅ **Settings**: Configuration complète depuis VS Code
+
+📚 [Extension Guide](vscode-extension/README.md)
 
 ### 🔒 Confidentialité Absolue
 
@@ -146,13 +159,28 @@ Ensuite, suivez les instructions affichées pour :
 
 ### Utilisation
 
-**Interface Menu Bar (Recommandée) :**
+**Option 1: VS Code Extension (Nouvelle!) :**
+```bash
+cd vscode-extension
+npm install
+npm run compile
+# Puis F5 dans VS Code pour tester
+# Ou créer le VSIX: npx vsce package
+```
+
+**Option 2: Background Daemon (Recommandé) :**
+```bash
+make daemon-install  # Installation auto-start
+make daemon-status   # Vérifier le statut
+```
+
+**Option 3: Menu Bar UI :**
 ```bash
 make menubar
 ```
 Cliquez sur l'icône dans la barre de menus → Start Sentry-AI
 
-**Interface Terminal (Alternative) :**
+**Option 4: Terminal :**
 ```bash
 make run
 ```
