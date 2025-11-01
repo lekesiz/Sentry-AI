@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     observer_interval: float = Field(default=2.0, ge=0.5, description="Polling interval in seconds")
     observer_enabled: bool = True
     event_driven_mode: bool = Field(default=True, description="Use event-driven observer instead of polling")
+
+    # VS Code Settings
+    vscode_simple_mode: bool = Field(default=True, description="Use simple auto-approve mode for VS Code (no safety checks)")
     
     # Security Settings
     blacklist_apps: List[str] = Field(

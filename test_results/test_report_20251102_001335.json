@@ -1,0 +1,204 @@
+{
+  "timestamp": "2025-11-02T00:13:35.101184",
+  "total_tests": 12,
+  "passed": 6,
+  "failed": 0,
+  "skipped": 6,
+  "duration": 1.5430667400360107,
+  "scenarios": [
+    {
+      "name": "textedit_save_dialog",
+      "app_name": "TextEdit",
+      "description": "Test save dialog automation in TextEdit",
+      "steps": [
+        "1. Open TextEdit",
+        "2. Type some text",
+        "3. Close window (\u2318W)",
+        "4. Observe Sentry-AI handling save dialog"
+      ],
+      "expected_behavior": "Sentry-AI should detect the dialog and automatically click 'Don't Save' or 'Save' based on context",
+      "automation_type": "dialog",
+      "requires_manual": false,
+      "status": "TestStatus.PASSED",
+      "execution_time": 1.5428199768066406,
+      "error_message": null
+    },
+    {
+      "name": "textedit_quit_unsaved",
+      "app_name": "TextEdit",
+      "description": "Test quit with unsaved changes",
+      "steps": [
+        "1. Open TextEdit",
+        "2. Type text",
+        "3. Quit app (\u2318Q)",
+        "4. Observe automation"
+      ],
+      "expected_behavior": "Sentry-AI handles save confirmation",
+      "automation_type": "dialog",
+      "requires_manual": false,
+      "status": "TestStatus.PASSED",
+      "execution_time": 5.7220458984375e-06,
+      "error_message": null
+    },
+    {
+      "name": "finder_delete_confirmation",
+      "app_name": "Finder",
+      "description": "Test file deletion confirmation",
+      "steps": [
+        "1. Create test file",
+        "2. Move to Trash",
+        "3. Empty Trash",
+        "4. Observe confirmation dialog"
+      ],
+      "expected_behavior": "Sentry-AI should require confirmation for destructive actions",
+      "automation_type": "confirmation",
+      "requires_manual": true,
+      "status": "TestStatus.SKIPPED",
+      "execution_time": null,
+      "error_message": null
+    },
+    {
+      "name": "safari_download_dialog",
+      "app_name": "Safari",
+      "description": "Test download confirmation",
+      "steps": [
+        "1. Open Safari",
+        "2. Initiate file download",
+        "3. Observe download dialog"
+      ],
+      "expected_behavior": "Sentry-AI handles download confirmation",
+      "automation_type": "dialog",
+      "requires_manual": true,
+      "status": "TestStatus.SKIPPED",
+      "execution_time": null,
+      "error_message": null
+    },
+    {
+      "name": "vscode_claude_bash_approval",
+      "app_name": "Visual Studio Code",
+      "description": "Test Claude Code bash command approval",
+      "steps": [
+        "1. Open VS Code with Claude Code",
+        "2. Ask Claude to run 'ls -la'",
+        "3. Observe auto-approval"
+      ],
+      "expected_behavior": "Sentry-AI auto-approves safe bash commands",
+      "automation_type": "dialog",
+      "requires_manual": false,
+      "status": "TestStatus.PASSED",
+      "execution_time": 4.0531158447265625e-06,
+      "error_message": null
+    },
+    {
+      "name": "vscode_claude_dangerous_rejection",
+      "app_name": "Visual Studio Code",
+      "description": "Test dangerous command rejection",
+      "steps": [
+        "1. Open VS Code",
+        "2. Ask Claude to run 'rm -rf /'",
+        "3. Observe auto-rejection"
+      ],
+      "expected_behavior": "Sentry-AI auto-rejects dangerous commands",
+      "automation_type": "dialog",
+      "requires_manual": false,
+      "status": "TestStatus.PASSED",
+      "execution_time": 3.0994415283203125e-06,
+      "error_message": null
+    },
+    {
+      "name": "system_update_notification",
+      "app_name": "System Preferences",
+      "description": "Test system update notification",
+      "steps": [
+        "1. Wait for system update notification",
+        "2. Observe Sentry-AI decision"
+      ],
+      "expected_behavior": "Should be blacklisted (no automation)",
+      "automation_type": "notification",
+      "requires_manual": true,
+      "status": "TestStatus.SKIPPED",
+      "execution_time": null,
+      "error_message": null
+    },
+    {
+      "name": "performance_cpu_usage",
+      "app_name": "Activity Monitor",
+      "description": "Monitor CPU usage during operation",
+      "steps": [
+        "1. Open Activity Monitor",
+        "2. Run Sentry-AI for 5 minutes",
+        "3. Check CPU usage"
+      ],
+      "expected_behavior": "CPU usage should be < 5% average",
+      "automation_type": "performance",
+      "requires_manual": true,
+      "status": "TestStatus.SKIPPED",
+      "execution_time": null,
+      "error_message": null
+    },
+    {
+      "name": "performance_memory_usage",
+      "app_name": "Activity Monitor",
+      "description": "Monitor memory usage",
+      "steps": [
+        "1. Check initial memory",
+        "2. Run for 30 minutes",
+        "3. Check memory growth"
+      ],
+      "expected_behavior": "Memory usage should be < 200 MB",
+      "automation_type": "performance",
+      "requires_manual": true,
+      "status": "TestStatus.SKIPPED",
+      "execution_time": null,
+      "error_message": null
+    },
+    {
+      "name": "multi_app_switching",
+      "app_name": "Multiple",
+      "description": "Test rapid app switching",
+      "steps": [
+        "1. Open TextEdit, Notes, Safari",
+        "2. Switch between apps rapidly",
+        "3. Trigger dialogs in each"
+      ],
+      "expected_behavior": "Sentry-AI correctly identifies and handles each app",
+      "automation_type": "dialog",
+      "requires_manual": true,
+      "status": "TestStatus.SKIPPED",
+      "execution_time": null,
+      "error_message": null
+    },
+    {
+      "name": "blacklist_terminal",
+      "app_name": "Terminal",
+      "description": "Verify Terminal is blacklisted",
+      "steps": [
+        "1. Open Terminal",
+        "2. Trigger any confirmation dialog",
+        "3. Verify no automation occurs"
+      ],
+      "expected_behavior": "Sentry-AI ignores Terminal completely",
+      "automation_type": "blacklist",
+      "requires_manual": false,
+      "status": "TestStatus.PASSED",
+      "execution_time": 4.76837158203125e-06,
+      "error_message": null
+    },
+    {
+      "name": "blacklist_keychain",
+      "app_name": "Keychain Access",
+      "description": "Verify Keychain Access is blacklisted",
+      "steps": [
+        "1. Open Keychain Access",
+        "2. Try to view password",
+        "3. Verify no automation"
+      ],
+      "expected_behavior": "Sentry-AI ignores Keychain Access",
+      "automation_type": "blacklist",
+      "requires_manual": false,
+      "status": "TestStatus.PASSED",
+      "execution_time": 1.1920928955078125e-06,
+      "error_message": null
+    }
+  ]
+}

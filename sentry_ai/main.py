@@ -37,7 +37,7 @@ class SentryAI:
         
         # Initialize agents
         self.analyzer = Analyzer()
-        self.decision_engine = DecisionEngine()
+        self.decision_engine = DecisionEngine(use_simple_vscode_strategy=settings.vscode_simple_mode)
         self.actor = Actor()
 
         # Choose observer type based on configuration

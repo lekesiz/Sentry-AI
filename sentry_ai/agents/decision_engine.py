@@ -13,6 +13,7 @@ from ..core.config import settings, requires_confirmation
 from ..core.llm_provider import LLMProviderFactory, LLMProvider, BaseLLMProvider
 from ..core.llm_fallback import fallback_manager
 from .vscode_strategies import VSCodeStrategyManager
+from .vscode_simple_strategy import SimpleVSCodeStrategyManager
 from .app_strategies import strategy_manager
 
 
@@ -24,19 +25,30 @@ class DecisionEngine:
     Falls back to rule-based logic if AI is unavailable.
     """
     
-    def __init__(self):
-        """Initialize the Decision Engine."""
+    def __init__(self, use_simple_vscode_strategy: bool = True):
+        """
+        Initialize the Decision Engine.
+
+        Args:
+            use_simple_vscode_strategy: If True, use simple auto-approve strategy for VS Code
+        """
         self.fallback_manager = fallback_manager
-        
-        # Initialize VS Code strategy manager with fallback
-        # For VS Code strategies, we'll use the first available provider
+        self.use_simple_vscode_strategy = use_simple_vscode_strategy
+
+        # Initialize VS Code strategy manager
         first_provider = None
         if fallback_manager.is_any_available():
             available = fallback_manager.get_available_providers()
             if available:
                 first_provider = fallback_manager.providers.get(available[0])
-        
-        self.vscode_strategies = VSCodeStrategyManager(llm_provider=first_provider)
+
+        # Use simple or complex VS Code strategy
+        if use_simple_vscode_strategy:
+            logger.info("🎯 Using SIMPLE VS Code strategy (auto-approve everything)")
+            self.vscode_strategies = SimpleVSCodeStrategyManager(llm_provider=first_provider)
+        else:
+            logger.info("🔧 Using COMPLEX VS Code strategy (safety checks)")
+            self.vscode_strategies = VSCodeStrategyManager(llm_provider=first_provider)
     
     def decide(self, context: DialogContext) -> Optional[AIDecision]:
         """
