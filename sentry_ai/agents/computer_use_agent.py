@@ -137,27 +137,34 @@ class ComputerUseAgent:
 
 {task_description}
 
-Respond with:
-1. What you see on the screen
-2. Relevant UI elements (buttons, dialogs, text fields)
-3. Recommended actions to complete the task
-4. Coordinates if clicking is needed (use percentage of screen)
+IMPORTANT: Respond ONLY with valid JSON. No markdown, no code blocks, just raw JSON.
 
-Format response as JSON:
+Format your response as JSON:
 {{
     "analysis": "description of what you see",
     "ui_elements": [
-        {{"type": "button", "text": "Yes", "location": "center-right"}},
-        ...
+        {{"type": "button", "text": "Yes", "location": "center-right"}}
     ],
     "recommended_action": {{
-        "type": "click|type|wait",
-        "target": "button text or description",
-        "coordinates": {{"x": 0.5, "y": 0.5}},
-        "value": "text to type if applicable"
+        "type": "click",
+        "target": "Yes",
+        "coordinates": {{"x": 0.65, "y": 0.68}}
     }},
-    "confidence": 0.9
-}}"""
+    "confidence": 0.95
+}}
+
+For coordinates:
+- x and y must be PERCENTAGES between 0.0 and 1.0
+- x=0.5 is horizontal center, y=0.5 is vertical center
+- Example: A button in bottom-right would be {{"x": 0.75, "y": 0.85}}
+- Measure carefully from the screenshot edges
+
+Common button locations:
+- "Yes" button: usually around {{"x": 0.65, "y": 0.68}}
+- "No" button: usually around {{"x": 0.50, "y": 0.68}}
+- "Cancel" button: usually around {{"x": 0.35, "y": 0.68}}
+
+RESPOND WITH ONLY RAW JSON, NO MARKDOWN!"""
                         }
                     ]
                 }
@@ -170,24 +177,54 @@ Format response as JSON:
 
         # Try to parse JSON response
         import json
+        import re
         try:
-            # Extract JSON from markdown code blocks if present
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                response_text = response_text[json_start:json_end].strip()
-            elif "```" in response_text:
-                json_start = response_text.find("```") + 3
-                json_end = response_text.find("```", json_start)
-                response_text = response_text[json_start:json_end].strip()
+            # Clean up response text
+            cleaned_text = response_text.strip()
 
-            result = json.loads(response_text)
+            # Extract JSON from markdown code blocks if present
+            if "```json" in cleaned_text:
+                json_start = cleaned_text.find("```json") + 7
+                json_end = cleaned_text.find("```", json_start)
+                cleaned_text = cleaned_text[json_start:json_end].strip()
+            elif "```" in cleaned_text:
+                json_start = cleaned_text.find("```") + 3
+                json_end = cleaned_text.find("```", json_start)
+                cleaned_text = cleaned_text[json_start:json_end].strip()
+
+            # Try to find JSON object in text
+            if not cleaned_text.startswith("{"):
+                match = re.search(r'\{.*\}', cleaned_text, re.DOTALL)
+                if match:
+                    cleaned_text = match.group()
+
+            result = json.loads(cleaned_text)
             logger.info(f"✅ Analysis complete: {result.get('analysis', '')[:100]}...")
+
+            # Validate coordinates if present
+            if "recommended_action" in result and result["recommended_action"]:
+                action = result["recommended_action"]
+                if "coordinates" in action:
+                    coords = action["coordinates"]
+                    x = coords.get("x", 0.5)
+                    y = coords.get("y", 0.5)
+
+                    # Ensure coordinates are floats between 0 and 1
+                    if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+                        # If values > 1, they might be pixels - convert to percentage
+                        if x > 1 or y > 1:
+                            screen_w, screen_h = pyautogui.size()
+                            logger.warning(f"Coordinates appear to be pixels, converting: ({x}, {y})")
+                            coords["x"] = x / screen_w if x > 1 else x
+                            coords["y"] = y / screen_h if y > 1 else y
+                            logger.info(f"Converted to percentages: ({coords['x']:.3f}, {coords['y']:.3f})")
+
             return result
 
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             # Fallback to text response
-            logger.warning("Could not parse JSON, using text response")
+            logger.warning(f"Could not parse JSON ({e}), using text response")
+            logger.debug(f"Response text: {response_text[:500]}")
             return {
                 "analysis": response_text,
                 "ui_elements": [],
@@ -210,16 +247,31 @@ Format response as JSON:
         try:
             if action_type == "click":
                 coords = action.get("coordinates", {})
-                x_pct = coords.get("x", 0.5)
-                y_pct = coords.get("y", 0.5)
+                x_val = coords.get("x", 0.5)
+                y_val = coords.get("y", 0.5)
 
-                # Convert percentage to pixel coordinates
+                # Convert to pixel coordinates
                 screen_w, screen_h = pyautogui.size()
-                x = int(screen_w * x_pct)
-                y = int(screen_h * y_pct)
+
+                # Check if values are percentages (0-1) or pixel coordinates
+                if isinstance(x_val, float) and x_val <= 1.0 and isinstance(y_val, float) and y_val <= 1.0:
+                    # Percentage coordinates
+                    x = int(screen_w * x_val)
+                    y = int(screen_h * y_val)
+                    logger.debug(f"Using percentage coords: {x_val:.2f}, {y_val:.2f} -> ({x}, {y})")
+                else:
+                    # Pixel coordinates
+                    x = int(x_val)
+                    y = int(y_val)
+                    logger.debug(f"Using pixel coords: ({x}, {y})")
 
                 logger.info(f"🖱️  Clicking at ({x}, {y})")
-                pyautogui.click(x, y)
+
+                # Move to position first, then click (more reliable)
+                pyautogui.moveTo(x, y, duration=0.3)
+                time.sleep(0.2)
+                pyautogui.click()
+
                 return True
 
             elif action_type == "type":
