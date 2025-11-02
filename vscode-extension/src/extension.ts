@@ -71,10 +71,28 @@ function startSentryAI() {
     }
 
     try {
+        // Determine actual Python path (venv or system)
+        let actualPythonPath = pythonPath;
+
+        // If pythonPath is relative or just "python3", try venv first
+        if (!path.isAbsolute(pythonPath)) {
+            const venvPython = path.join(sentryPath, 'venv', 'bin', 'python');
+            if (fs.existsSync(venvPython)) {
+                actualPythonPath = venvPython;
+                console.log(`Using venv Python: ${actualPythonPath}`);
+            }
+        }
+
+        console.log(`Starting Sentry-AI with Python: ${actualPythonPath}`);
+        console.log(`Working directory: ${sentryPath}`);
+
         // Start Sentry-AI process
-        sentryProcess = spawn(pythonPath, ['-m', 'sentry_ai.main'], {
+        sentryProcess = spawn(actualPythonPath, ['-m', 'sentry_ai.main'], {
             cwd: sentryPath,
-            env: { ...process.env }
+            env: {
+                ...process.env,
+                PYTHONPATH: sentryPath
+            }
         });
 
         sentryProcess.stdout?.on('data', (data) => {
