@@ -97,83 +97,133 @@ class SentryAI:
             return False
 
         try:
-            # Check if VS Code dialog is present
-            task = f"""Look at the screen. Is there a dialog box from {app_name} or Claude Code visible?
+            # Check if VS Code dialog or Claude Code question is present
+            task = f"""Look at the screen carefully. You are an AI assistant helping with VS Code automation.
 
-If YES:
-- What is the dialog asking?
-- What are the button options (e.g., Yes, No, Allow, Cancel)?
-- Where are the buttons located?
-- Recommend which button to click (prefer Yes, Allow, Continue, OK)
+IMPORTANT: Check for TWO types of interactions:
 
-If NO:
-- Say "No dialog detected"
-"""
+1. DIALOGS (Simple Yes/No):
+   - Is there a dialog box asking for permission?
+   - Example: "Allow this bash command?"
+   - Action: Recommend "Yes" or "No" button
 
-            logger.info(f"🔍 Analyzing screen for {app_name} dialog...")
+2. CLAUDE CODE QUESTIONS (Needs intelligent response):
+   - Is Claude Code asking a question in the chat?
+   - Example: "What should I name this function?"
+   - Example: "Should I add error handling?"
+   - Example: "Do you want comments in the code?"
+   - Action: Provide a PROFESSIONAL, CONCISE answer to type
+
+Respond with JSON:
+{{
+    "interaction_type": "dialog|question|none",
+    "question": "the actual question being asked",
+    "analysis": "what you see",
+    "recommended_response": {{
+        "type": "button|text|none",
+        "action": "yes|no|<text to type>",
+        "reasoning": "why this response"
+    }}
+}}
+
+If Claude Code is asking a coding question:
+- Give professional, concise answers
+- Use best practices
+- Be specific but brief
+- Example: "Use 'calculate_fibonacci' for clarity"
+- Example: "Yes, add try-except for file operations"
+
+If NO interaction detected, set interaction_type to "none"."""
+
+            logger.info(f"🔍 Analyzing screen for {app_name} interaction...")
             analysis = self.computer_use_agent.analyze_screen(task)
 
-            # Check if dialog was detected
-            analysis_text = analysis.get('analysis', '').lower()
-            if 'no dialog' in analysis_text or 'not visible' in analysis_text:
-                logger.debug("No dialog detected by vision AI")
+            # Get interaction type from new response format
+            interaction_type = analysis.get('interaction_type', 'none')
+            question = analysis.get('question', '')
+            recommended_response = analysis.get('recommended_response', {})
+
+            if interaction_type == 'none':
+                logger.debug("No interaction detected by vision AI")
                 return False
 
-            # Execute the recommended action
-            action = analysis.get('recommended_action')
-            if action:
-                logger.info(f"✅ Vision AI detected dialog in {app_name}")
-                logger.info(f"📋 Analysis: {analysis.get('analysis', '')[:100]}...")
+            logger.info(f"✅ Vision AI detected {interaction_type} in {app_name}")
+            logger.info(f"📋 Question: {question[:100]}...")
 
-                # Try simple keyboard approach first (more reliable than coordinates)
-                target = action.get('target', '').lower()
+            import pyautogui
+            success = False
+            chosen_option = ""
 
-                # Simple strategy: for most dialogs, Enter accepts, Escape cancels
+            # Handle QUESTIONS - Type intelligent response
+            if interaction_type == 'question':
+                response_text = recommended_response.get('action', '')
+                reasoning = recommended_response.get('reasoning', '')
+
+                if response_text and response_text not in ['yes', 'no']:
+                    logger.info(f"🤖 AI Response: {response_text}")
+                    logger.info(f"💭 Reasoning: {reasoning}")
+
+                    # Type the intelligent response
+                    time.sleep(0.5)
+                    pyautogui.write(response_text, interval=0.03)
+                    time.sleep(0.3)
+                    pyautogui.press('return')
+
+                    success = True
+                    chosen_option = response_text
+                    logger.success(f"✅ Typed and sent intelligent response")
+                else:
+                    logger.warning("No valid response text provided")
+                    return False
+
+            # Handle DIALOGS - Press ENTER/ESCAPE
+            elif interaction_type == 'dialog':
+                action_text = recommended_response.get('action', '').lower()
+
                 keyboard_action = None
-                if any(word in target for word in ['yes', 'ok', 'allow', 'continue', 'accept', 'approve']):
-                    keyboard_action = 'return'  # Enter key
+                if action_text in ['yes', 'ok', 'allow', 'continue', 'accept', 'approve']:
+                    keyboard_action = 'return'
+                    chosen_option = 'Yes'
                     logger.info("🎹 Using keyboard: ENTER (Accept)")
-                elif any(word in target for word in ['no', 'cancel', 'deny']):
-                    keyboard_action = 'escape'  # Escape key
+                elif action_text in ['no', 'cancel', 'deny']:
+                    keyboard_action = 'escape'
+                    chosen_option = 'No'
                     logger.info("🎹 Using keyboard: ESCAPE (Cancel)")
 
-                success = False
                 if keyboard_action:
-                    # Use keyboard instead of mouse
-                    import pyautogui
                     time.sleep(0.3)
                     pyautogui.press(keyboard_action)
                     success = True
-                    logger.info(f"✅ Pressed {keyboard_action.upper()} key")
+                    logger.success(f"✅ Pressed {keyboard_action.upper()} key")
                 else:
-                    # Fallback to mouse click
-                    success = self.computer_use_agent.execute_action(action)
+                    # Fallback to old behavior
+                    action = analysis.get('recommended_action')
+                    if action:
+                        success = self.computer_use_agent.execute_action(action)
+                        chosen_option = action.get('target', 'Unknown')
 
-                if success:
-                    logger.success(f"🎯 Successfully automated {app_name} dialog with vision AI")
-                    _system_state["actions_performed_today"] += 1
+            if success:
+                logger.success(f"🎯 Successfully automated {app_name} {interaction_type}")
+                _system_state["actions_performed_today"] += 1
 
-                    # Log to database
-                    db_manager.log_action(
-                        app_name=app_name,
-                        window_title="Vision-based detection",
-                        dialog_type="auto_detected",
-                        question=analysis.get('analysis', '')[:200],
-                        options=[action.get('target', 'Unknown')],
-                        chosen_option=action.get('target', 'Unknown'),
-                        success=True,
-                        execution_time_ms=0,
-                        ai_confidence=analysis.get('confidence', 0.9),
-                        ai_reasoning="Vision AI analysis"
-                    )
+                # Log to database
+                db_manager.log_action(
+                    app_name=app_name,
+                    window_title="Vision-based detection",
+                    dialog_type=interaction_type,
+                    question=question[:200],
+                    options=[chosen_option],
+                    chosen_option=chosen_option,
+                    success=True,
+                    execution_time_ms=0,
+                    ai_confidence=analysis.get('confidence', 0.9),
+                    ai_reasoning=recommended_response.get('reasoning', 'Vision AI analysis')
+                )
 
-                    return True
-                else:
-                    logger.error("Failed to execute vision-based action")
-                    return False
-
-            logger.debug("No action recommended by vision AI")
-            return False
+                return True
+            else:
+                logger.error("Failed to execute vision-based action")
+                return False
 
         except Exception as e:
             logger.error(f"Error in vision-based dialog handling: {e}")
