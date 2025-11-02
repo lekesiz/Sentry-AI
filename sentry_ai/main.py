@@ -125,7 +125,29 @@ If NO:
                 logger.info(f"✅ Vision AI detected dialog in {app_name}")
                 logger.info(f"📋 Analysis: {analysis.get('analysis', '')[:100]}...")
 
-                success = self.computer_use_agent.execute_action(action)
+                # Try simple keyboard approach first (more reliable than coordinates)
+                target = action.get('target', '').lower()
+
+                # Simple strategy: for most dialogs, Enter accepts, Escape cancels
+                keyboard_action = None
+                if any(word in target for word in ['yes', 'ok', 'allow', 'continue', 'accept', 'approve']):
+                    keyboard_action = 'return'  # Enter key
+                    logger.info("🎹 Using keyboard: ENTER (Accept)")
+                elif any(word in target for word in ['no', 'cancel', 'deny']):
+                    keyboard_action = 'escape'  # Escape key
+                    logger.info("🎹 Using keyboard: ESCAPE (Cancel)")
+
+                success = False
+                if keyboard_action:
+                    # Use keyboard instead of mouse
+                    import pyautogui
+                    time.sleep(0.3)
+                    pyautogui.press(keyboard_action)
+                    success = True
+                    logger.info(f"✅ Pressed {keyboard_action.upper()} key")
+                else:
+                    # Fallback to mouse click
+                    success = self.computer_use_agent.execute_action(action)
 
                 if success:
                     logger.success(f"🎯 Successfully automated {app_name} dialog with vision AI")
